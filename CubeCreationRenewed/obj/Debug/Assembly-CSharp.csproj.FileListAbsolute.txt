@@ -1,0 +1,2 @@
+C:\Users\Davids 3th PC\Desktop\Unity Git Projects\CubeCreationRenewed\CubeCreationRenewed\obj\Debug\Assembly-CSharp.csprojAssemblyReference.cache
+C:\Users\Davids 3th PC\Desktop\Unity Git Projects\CubeCreationRenewed\CubeCreationRenewed\obj\Debug\Assembly-CSharp.csproj.CoreCompileInputs.cache
