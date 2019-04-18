@@ -20,7 +20,7 @@ namespace CubeCreationEngine.Core
         public static List<string> toRemove = new List<string>(); // a list to remove the chunks that are not needed from the dictionary
         public static CoroutineQueue queue;
         public static uint MaxCorourtines = 4000; // must increase with the size of the radius
-        public Vector3 lastBuildPos;// store position of player
+        public Vector3 lastBuildPos; // store position of player
         public static bool firstbuild = true;
         public float lastBuildTime;
         public float startTime;
@@ -32,18 +32,22 @@ namespace CubeCreationEngine.Core
         {
             return (int)v.x + "_" + (int)v.z;
         }
-        void BuildChunkAt(int x, int y, int z)// builds chunks
+        IEnumerator BuildChunkAt(int x, int y, int z)// builds chunks
         {
             Vector3 chunkPosition = new Vector3(x * chunkSize, y * chunkSize, z * chunkSize);
             string n = BuildChunkName(chunkPosition);
-            Chunk c;
-            if (!chunks.TryGetValue(n, out c)) // checks if the chunks has already been generated
+            Chunk _ = new Chunk(chunkPosition, textureAtlas, textureAtlasFuild);
+            _.chunk.transform.parent = this.transform;
+            _.fluid.transform.parent = this.transform;
+            chunks.TryAdd(_.chunk.name, _);
+            if (!chunks.TryGetValue(n, out _)) // checks if the chunks has already been generated
             {
-                c = new Chunk(chunkPosition, textureAtlas, textureAtlasFuild);
-                c.chunk.transform.parent = this.transform;
-                c.fluid.transform.parent = this.transform;
-                chunks.TryAdd(c.chunk.name, c);
+                Debug.Log("Building chunk build");
+               
+                Debug.Log("End chunk build");
+                yield return null;
             }
+            yield return null;
         }
         public static Block GetWorldBlock(Vector3 pos) // getting the block in thw world when clicked on
         {
@@ -97,28 +101,34 @@ namespace CubeCreationEngine.Core
                 yield break;
             }
             //builds chunk forward
-            BuildChunkAt(x, y, z + 1);
-            queue.Run(BuildRecursiveWorld(x, y, z + 1, radius, nextradius));
+            queue.Run(BuildChunkAt(x, y, z + 1));
+            queue.Run(BuildRecursiveWorld(x, y, z + 1, startradius, nextradius));
+            //Debug.Log("Starting Building chunk front");
             yield return null;
             //builds chunk back
-            BuildChunkAt(x, y, z - 1);
-            queue.Run(BuildRecursiveWorld(x, y, z - 1, radius, nextradius));
+            queue.Run(BuildChunkAt(x, y, z - 1));
+            queue.Run(BuildRecursiveWorld(x, y, z - 1, startradius, nextradius));
+            //Debug.Log("Starting Building chunk back");
             yield return null;
             //builds chunk left
-            BuildChunkAt(x - 1, y, z );
-            queue.Run(BuildRecursiveWorld(x - 1, y, z , radius, nextradius));
+            queue.Run(BuildChunkAt(x - 1, y, z ));
+            queue.Run(BuildRecursiveWorld(x - 1, y, z , startradius, nextradius));
+            //Debug.Log("Starting Building chunk left");
             yield return null;
             //builds chunk right
-            BuildChunkAt(x + 1, y, z - 1);
-            queue.Run(BuildRecursiveWorld(x + 1, y, z, radius, nextradius));
+            queue.Run(BuildChunkAt(x + 1, y, z - 1));
+            queue.Run(BuildRecursiveWorld(x + 1, y, z, startradius, nextradius));
+            //Debug.Log("Starting Building chunk right");
             yield return null;
             //builds chunk up
-            BuildChunkAt(x, y + 1, z );
-            queue.Run(BuildRecursiveWorld(x, y + 1, z, radius, nextradius));
+            queue.Run(BuildChunkAt(x, y + 1, z ));
+            queue.Run(BuildRecursiveWorld(x, y + 1, z, startradius, nextradius));
+            //Debug.Log("Starting Building chunk up");
             yield return null;
             //builds chunk down
-            BuildChunkAt(x, y - 1, z - 1);
-            queue.Run(BuildRecursiveWorld(x, y - 1, z, radius, nextradius));
+            queue.Run(BuildChunkAt(x, y - 1, z - 1));
+            queue.Run(BuildRecursiveWorld(x, y - 1, z, startradius, nextradius));
+            //Debug.Log("Starting Building chunk down");
             yield return null;
         }
         IEnumerator DrawChunks() // looping through the dictionary and drawing the chunks that needed to be drawn
@@ -158,12 +168,12 @@ namespace CubeCreationEngine.Core
             lastBuildTime = Time.time;
             queue.Run(BuildRecursiveWorld((int)(player.transform.position.x / chunkSize), (int)(player.transform.position.y / chunkSize), (int)(player.transform.position.z / chunkSize), radius, radius));
         }
-        void Start() // Use this for initialization
+        public void Start() // Use this for initialization
         {
             Vector3 ppos = player.transform.position;
             player.transform.position = new Vector3(ppos.x, Utilities.GenerateDirtHeight(ppos.x, ppos.z) + 1, ppos.z); // setting the player height to the chunk height = 1
             lastBuildPos = player.transform.position;
-            player.SetActive(false);
+            player.SetActive(true);
             firstbuild = true;
             chunks = new ConcurrentDictionary<string, Chunk>();
             this.transform.position = Vector3.zero;
@@ -173,13 +183,13 @@ namespace CubeCreationEngine.Core
             lastBuildTime = Time.time;
             Debug.Log("Start build");
             // build starting chunk
-            BuildChunkAt((int)(player.transform.position.x / chunkSize), (int)(player.transform.position.y / chunkSize), (int)(player.transform.position.z / chunkSize));
+            queue.Run(BuildChunkAt((int)(player.transform.position.x / chunkSize), (int)(player.transform.position.y / chunkSize), (int)(player.transform.position.z / chunkSize)));
             // draw it
             queue.Run(DrawChunks());
             // creates a bigger world
             queue.Run(BuildRecursiveWorld((int)(player.transform.position.x / chunkSize), (int)(player.transform.position.y / chunkSize), (int)(player.transform.position.z / chunkSize), radius, radius));
         }
-        void Update()// Update is called once per frame
+        public void Update()// Update is called once per frame
         {
             Vector3 movement = lastBuildPos - player.transform.position; 
             if (movement.magnitude > chunkSize) // checks if the player has moved over a chunk
