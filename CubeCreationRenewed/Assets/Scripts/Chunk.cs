@@ -25,13 +25,13 @@ namespace CubeCreationEngine.Core
                 {
                     for (int x = 0; x < World.chunkSize; x++)
                     {
-                        mb.StartCoroutine(mb.Drop(chunkData[x,y,z], Block.BlockType.SAND, 20));
+                        World.queue.Run(mb.Drop(chunkData[x,y,z], Block.BlockType.SAND, 20));
                     }
                 }
             }
             yield return null;
         }
-        IEnumerator BuildChunk(/*int sizeX, int sizeY, int sizeZ*/)
+        void BuildChunk()
         {
             //chunkData = new Block[sizeX, sizeY, sizeZ];
             for (int z = 0; z < World.chunkSize; z++) //create blocks
@@ -114,7 +114,6 @@ namespace CubeCreationEngine.Core
                     }
                 }
             }
-            yield return null;
         }
             
         public void Redraw() //redraws the chunk texture
@@ -125,9 +124,9 @@ namespace CubeCreationEngine.Core
             GameObject.DestroyImmediate(fluid.GetComponent<MeshFilter>());
             GameObject.DestroyImmediate(fluid.GetComponent<MeshRenderer>());
             GameObject.DestroyImmediate(fluid.GetComponent<Collider>());
-            World.queue.Run(DrawChunk());
+            DrawChunk();
         }
-        public IEnumerator DrawChunk()
+        public void DrawChunk()
         {
             Debug.Log("drawing Chunk");
             if (!treesCreated)
@@ -163,7 +162,6 @@ namespace CubeCreationEngine.Core
             // creating water material but not adding in the collider 
             World.queue.Run(CombineQuads(fluid.gameObject, fluidMaterial));
             Debug.Log("Combine chunk");
-            yield return null;
         }
         IEnumerator BuildTrees(Block trunk, int x, int y, int z)//builds the tree from the woodbase
         {
@@ -216,7 +214,7 @@ namespace CubeCreationEngine.Core
             mb.SetOwner(this);
             cubeMaterial = c;
             fluidMaterial = t;
-            World.queue.Run(BuildChunk(/*chunkSize, chunkSize, chunkSize*/));
+            BuildChunk();
         }
         IEnumerator CombineQuads(GameObject o, Material m)
         {
@@ -239,7 +237,6 @@ namespace CubeCreationEngine.Core
             MeshRenderer renderer = o.gameObject.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
             renderer.material = cubeMaterial;
             renderer.material = m;
-            //renderer.material = m;
             //Delete all uncombined children
             foreach (Transform quad in o.transform)
             {
